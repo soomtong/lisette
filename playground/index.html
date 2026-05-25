@@ -35,6 +35,9 @@
           </button>
         </div>
         <div class="toolbar-right">
+          <button id="btn-vim-toggle" class="btn btn-vim" title="Toggle Vim mode (Ctrl+Alt+V)" aria-pressed="false">
+            <span class="vim-toggle-label">Vim</span>
+          </button>
           <span id="status-indicator" class="status-idle">Ready</span>
         </div>
       </header>
@@ -42,6 +45,7 @@
       <main id="main-layout">
         <div id="editor-pane">
           <div id="editor-container"></div>
+          <div id="vim-statusbar" hidden></div>
         </div>
         <div id="pane-resizer" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
         <div id="output-pane">
