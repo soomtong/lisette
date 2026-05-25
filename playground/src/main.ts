@@ -4,6 +4,26 @@ import { loadWasmBridge, type Diagnostic } from "./runner/wasm-bridge.js";
 import { executeGoSource, formatGoSource } from "./runner/executor.js";
 import { THEME_LIGHT, THEME_DARK } from "./editor/theme.js";
 import { readSourceFromHash, writeSourceToHash, copyShareUrl } from "./share.js";
+import { setupVim, type VimActions, type VimHandle } from "./editor/vim.js";
+
+// ─── Vim localStorage helpers ─────────────────────────────────────────────────
+const VIM_STORAGE_KEY = "lisette-playground:vim-mode";
+
+function readVimEnabled(): boolean {
+  try {
+    return localStorage.getItem(VIM_STORAGE_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
+function writeVimEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(VIM_STORAGE_KEY, enabled ? "on" : "off");
+  } catch {
+    // Safari private mode etc — no-op, in-memory state still works.
+  }
+}
 
 // ─── Pane resizer ─────────────────────────────────────────────────────────────
 function initResizer() {
@@ -52,6 +72,8 @@ const outputPane     = document.getElementById("output-pane")!;
 const drawerToggle   = document.getElementById("drawer-toggle")!;
 const tabBtns        = document.querySelectorAll<HTMLButtonElement>(".tab-btn[data-tab]");
 const tabPanels      = document.querySelectorAll<HTMLElement>(".tab-panel");
+const btnVimToggle   = document.getElementById("btn-vim-toggle") as HTMLButtonElement;
+const vimStatusBar   = document.getElementById("vim-statusbar") as HTMLElement;
 
 // ─── Mobile drawer ─────────────────────────────────────────────────────────────
 const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
@@ -145,6 +167,35 @@ async function main() {
     document.getElementById("go-source-editor-container")!,
     sharedCode ?? undefined,
   );
+
+  // ── Vim mode toggle ───────────────────────────────────────────────────────
+  let vimHandle: VimHandle | null = null;
+
+  const vimActions: VimActions = {
+    format: async () => { btnFormat.click(); },
+    run:    async () => { btnRun.click(); },
+    disable: () => { toggleVim(false); },
+  };
+
+  async function toggleVim(next: boolean): Promise<void> {
+    if (next && !vimHandle) {
+      vimStatusBar.hidden = false;
+      vimHandle = await setupVim(editorResult.mainEditor, vimStatusBar, vimActions);
+      btnVimToggle.setAttribute("aria-pressed", "true");
+      writeVimEnabled(true);
+    } else if (!next && vimHandle) {
+      vimHandle.dispose();
+      vimHandle = null;
+      vimStatusBar.hidden = true;
+      btnVimToggle.setAttribute("aria-pressed", "false");
+      writeVimEnabled(false);
+    }
+    editorResult.mainEditor.focus();
+  }
+
+  if (readVimEnabled()) {
+    await toggleVim(true);
+  }
 
   // Switch editor theme when the OS colour scheme changes
   const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
