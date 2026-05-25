@@ -170,6 +170,7 @@ async function main() {
 
   // ── Vim mode toggle ───────────────────────────────────────────────────────
   let vimHandle: VimHandle | null = null;
+  let vimToggling = false;
 
   const vimActions: VimActions = {
     format: async () => { btnFormat.click(); },
@@ -178,19 +179,25 @@ async function main() {
   };
 
   async function toggleVim(next: boolean): Promise<void> {
-    if (next && !vimHandle) {
-      vimStatusBar.hidden = false;
-      vimHandle = await setupVim(editorResult.mainEditor, vimStatusBar, vimActions);
-      btnVimToggle.setAttribute("aria-pressed", "true");
-      writeVimEnabled(true);
-    } else if (!next && vimHandle) {
-      vimHandle.dispose();
-      vimHandle = null;
-      vimStatusBar.hidden = true;
-      btnVimToggle.setAttribute("aria-pressed", "false");
-      writeVimEnabled(false);
+    if (vimToggling) return;
+    vimToggling = true;
+    try {
+      if (next && !vimHandle) {
+        vimStatusBar.hidden = false;
+        vimHandle = await setupVim(editorResult.mainEditor, vimStatusBar, vimActions);
+        btnVimToggle.setAttribute("aria-pressed", "true");
+        writeVimEnabled(true);
+      } else if (!next && vimHandle) {
+        vimHandle.dispose();
+        vimHandle = null;
+        vimStatusBar.hidden = true;
+        btnVimToggle.setAttribute("aria-pressed", "false");
+        writeVimEnabled(false);
+      }
+      editorResult.mainEditor.focus();
+    } finally {
+      vimToggling = false;
     }
-    editorResult.mainEditor.focus();
   }
 
   if (readVimEnabled()) {
