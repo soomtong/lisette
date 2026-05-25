@@ -1,5 +1,5 @@
 import type * as Monaco from "monaco-editor";
-import { initVimMode } from "monaco-vim";
+import { initVimMode, VimMode } from "monaco-vim";
 
 export interface VimActions {
   format: () => void | Promise<void>;
@@ -13,21 +13,26 @@ export interface VimHandle {
 
 let exCommandsRegistered = false;
 
+function registerExCommands(actions: VimActions): void {
+  if (exCommandsRegistered) return;
+  const Vim = VimMode.Vim;
+
+  Vim.defineEx("write", "w",   () => { void actions.format(); });
+  Vim.defineEx("fmt",   "fmt", () => { void actions.format(); });
+  Vim.defineEx("run",   "r",   () => { void actions.run(); });
+  Vim.defineEx("vim",   "vim", () => { actions.disable(); });
+
+  exCommandsRegistered = true;
+}
+
 export async function setupVim(
   editor: Monaco.editor.IStandaloneCodeEditor,
   statusBar: HTMLElement,
   actions: VimActions,
 ): Promise<VimHandle> {
+  registerExCommands(actions);
   const vim = initVimMode(editor, statusBar);
-
-  // Ex command registration happens in Task 6. Reference `actions` and the
-  // guard here so the linter does not flag them as unused.
-  void actions;
-  void exCommandsRegistered;
-
   return {
-    dispose: () => {
-      vim.dispose();
-    },
+    dispose: () => vim.dispose(),
   };
 }
