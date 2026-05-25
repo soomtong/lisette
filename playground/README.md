@@ -11,6 +11,7 @@ A browser-based playground for the [Lisette](https://lisette.run) programming la
 - **Type check** — live squiggle diagnostics ~1 s after you stop typing; full report in the Diagnostics tab
 - **Go source** — compiled Go output shown in a dedicated tab
 - **Autocomplete** — keyword, type, and snippet completions; WASM-backed semantic completions when available
+- **Vim mode** — toggleable modal editing via `monaco-vim`. Click "VIM" in the toolbar or press `Ctrl+Alt+V`. Ex commands: `:w`/`:fmt` → Format, `:run`/`:r` → Run, `:vim` → toggle off.
 
 ## Getting started
 
