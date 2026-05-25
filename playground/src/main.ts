@@ -197,6 +197,10 @@ async function main() {
     await toggleVim(true);
   }
 
+  btnVimToggle.addEventListener("click", () => {
+    void toggleVim(!vimHandle);
+  });
+
   // Switch editor theme when the OS colour scheme changes
   const darkMq = window.matchMedia("(prefers-color-scheme: dark)");
   darkMq.addEventListener("change", (e) => {
@@ -375,6 +379,14 @@ async function main() {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       run();
+    }
+  });
+
+  // Keyboard shortcut: Ctrl+Alt+V to toggle Vim mode
+  document.addEventListener("keydown", (e) => {
+    if (e.ctrlKey && e.altKey && (e.key === "v" || e.key === "V")) {
+      e.preventDefault();
+      void toggleVim(!vimHandle);
     }
   });
 
