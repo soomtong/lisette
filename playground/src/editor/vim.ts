@@ -1,4 +1,5 @@
 import type * as Monaco from "monaco-editor";
+import { initVimMode } from "monaco-vim";
 
 export interface VimActions {
   format: () => void | Promise<void>;
@@ -10,14 +11,23 @@ export interface VimHandle {
   dispose: () => void;
 }
 
-// Guard: defineEx calls persist across editor instances, so register only once.
 let exCommandsRegistered = false;
 
 export async function setupVim(
-  _editor: Monaco.editor.IStandaloneCodeEditor,
-  _statusBar: HTMLElement,
-  _actions: VimActions,
+  editor: Monaco.editor.IStandaloneCodeEditor,
+  statusBar: HTMLElement,
+  actions: VimActions,
 ): Promise<VimHandle> {
+  const vim = initVimMode(editor, statusBar);
+
+  // Ex command registration happens in Task 6. Reference `actions` and the
+  // guard here so the linter does not flag them as unused.
+  void actions;
   void exCommandsRegistered;
-  throw new Error("setupVim: not yet implemented");
+
+  return {
+    dispose: () => {
+      vim.dispose();
+    },
+  };
 }
