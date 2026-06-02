@@ -347,6 +347,31 @@ impl TestClient {
         .await
     }
 
+    pub async fn semantic_tokens(&mut self, uri: &str) -> Option<SemanticTokens> {
+        self.request(
+            "textDocument/semanticTokens/full",
+            json!({"textDocument": {"uri": uri}}),
+        )
+        .await
+    }
+
+    pub async fn code_action(
+        &mut self,
+        uri: &str,
+        range: Range,
+        diagnostics: Vec<Diagnostic>,
+    ) -> Option<CodeActionResponse> {
+        self.request(
+            "textDocument/codeAction",
+            json!({
+                "textDocument": {"uri": uri},
+                "range": range,
+                "context": {"diagnostics": diagnostics}
+            }),
+        )
+        .await
+    }
+
     pub async fn shutdown(&mut self) {
         let _: Value = self.request("shutdown", json!(null)).await;
     }

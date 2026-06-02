@@ -43,6 +43,11 @@
           "description": "Path to the Lisette CLI binary."
         }
       }
+    },
+    "configurationDefaults": {
+      "[lisette]": {
+        "editor.semanticHighlighting.enabled": true
+      }
     }
   },
   "scripts": {

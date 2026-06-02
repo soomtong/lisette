@@ -2,6 +2,7 @@ use rustc_hash::FxHashMap as HashMap;
 
 use diagnostics::SemanticResult;
 use semantics::facts::Facts;
+use syntax::lex::Trivia;
 use syntax::program::{Definition, File};
 use syntax::types::Symbol;
 use tower_lsp::lsp_types::Url;
@@ -17,6 +18,7 @@ pub(crate) struct AnalysisSnapshot {
     uri_to_id: HashMap<Url, u32>,
     id_to_uri: HashMap<u32, Url>,
     line_indexes: HashMap<u32, LineIndex>,
+    trivia: Trivia,
 }
 
 // SAFETY: AnalysisSnapshot is immutable after construction. Non-Send/Sync types
@@ -31,6 +33,7 @@ impl AnalysisSnapshot {
         has_parse_errors: bool,
         config: &ProjectConfig,
         analyzed_uri: &Url,
+        trivia: Trivia,
     ) -> Self {
         let mut uri_to_id = HashMap::default();
         let mut id_to_uri = HashMap::default();
@@ -87,7 +90,12 @@ impl AnalysisSnapshot {
             uri_to_id,
             id_to_uri,
             line_indexes,
+            trivia,
         }
+    }
+
+    pub(crate) fn trivia(&self) -> &Trivia {
+        &self.trivia
     }
 
     pub(crate) fn get_file_id(&self, uri: &Url) -> Option<u32> {

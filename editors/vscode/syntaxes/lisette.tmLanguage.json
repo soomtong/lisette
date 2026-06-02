@@ -9,9 +9,11 @@
     { "include": "#attributes" },
     { "include": "#numbers" },
     { "include": "#function-definitions" },
+    { "include": "#for-bindings" },
     { "include": "#keywords" },
-    { "include": "#types" },
     { "include": "#function-calls" },
+    { "include": "#type-annotations" },
+    { "include": "#types" },
     { "include": "#operators" },
     { "include": "#punctuation" }
   ],
@@ -159,7 +161,31 @@
         },
         {
           "name": "keyword.control.lisette",
-          "match": "\\b(if|else|match|while|for|return|break|continue|loop|in)\\b"
+          "match": "\\b(if|else|match|while|for|return|break|continue|loop|in|select|task|try|recover|defer)\\b"
+        },
+        {
+          "comment": "Constant definition: const Name",
+          "match": "\\b(const)\\s+([A-Z][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.lisette" },
+            "2": { "name": "entity.name.constant.lisette" }
+          }
+        },
+        {
+          "comment": "Constant definition: const name",
+          "match": "\\b(const)\\s+([a-z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.lisette" },
+            "2": { "name": "entity.name.constant.lisette" }
+          }
+        },
+        {
+          "comment": "Type alias definition: type Name",
+          "match": "\\b(type)\\s+([A-Z][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "storage.type.lisette" },
+            "2": { "name": "entity.name.type.lisette" }
+          }
         },
         {
           "name": "storage.type.lisette",
@@ -190,12 +216,70 @@
           "match": "\\b(int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|float32|float64|complex64|complex128|string|bool|rune|byte|error|uintptr|Never)\\b"
         },
         {
+          "name": "support.type.builtin.lisette",
+          "match": "\\b(Option|Result|Partial|Slice|Map|Ref|Channel|Sender|Receiver|Range|RangeInclusive|RangeFrom|RangeTo|RangeToInclusive|EnumeratedSlice|Unknown|Comparable|Ordered|VarArgs|PanicValue)\\b"
+        },
+        {
           "name": "support.function.builtin.lisette",
-          "match": "\\b(panic|assert_type)\\b"
+          "match": "\\b(panic|assert_type|complex|real|imaginary|min|max|println|print)\\b"
         },
         {
           "name": "constant.language.lisette",
-          "match": "\\b(Some|None|Ok|Err)\\b"
+          "match": "\\b(Some|None|Ok|Err|Both)\\b"
+        },
+        {
+          "comment": "Field access: obj.field (lowercase field)",
+          "match": "\\b([a-z_][a-zA-Z0-9_]*)\\s*(\\.)\\s*([a-z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "variable.other.object.lisette" },
+            "2": { "name": "punctuation.separator.dot.lisette" },
+            "3": { "name": "variable.other.property.lisette" }
+          }
+        },
+        {
+          "comment": "Enum variant access: Type.Variant",
+          "match": "\\b([A-Z][a-zA-Z0-9_]*)\\s*(\\.)\\s*([A-Z][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "entity.name.type.lisette" },
+            "2": { "name": "punctuation.separator.dot.lisette" },
+            "3": { "name": "entity.name.function.lisette" }
+          }
+        },
+        {
+          "comment": "Module-qualified type access: pkg.Name (not followed by ()",
+          "match": "\\b([a-z_][a-zA-Z0-9_]*)\\s*(\\.)\\s*([A-Z][a-zA-Z0-9_]*)(?!\\s*\\()",
+          "captures": {
+            "1": { "name": "entity.name.namespace.lisette" },
+            "2": { "name": "punctuation.separator.dot.lisette" },
+            "3": { "name": "entity.name.type.lisette" }
+          }
+        },
+        {
+          "begin": "\\b([A-Z][a-zA-Z0-9_]*)\\s*(<)",
+          "beginCaptures": {
+            "1": { "name": "entity.name.type.lisette" },
+            "2": { "name": "punctuation.definition.typeparameters.begin.lisette" }
+          },
+          "end": ">",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.typeparameters.end.lisette" }
+          },
+          "name": "meta.generic.lisette",
+          "patterns": [
+            {
+              "name": "variable.other.typeparameter.lisette",
+              "match": "\\b[a-z][a-zA-Z0-9_]*\\b"
+            },
+            { "include": "#types" },
+            { "include": "#punctuation" }
+          ]
+        },
+        {
+          "match": "\\b((?:[a-z_][a-zA-Z0-9_]*\\.)+)([A-Z][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "entity.name.type.lisette" },
+            "2": { "name": "entity.name.type.lisette" }
+          }
         },
         {
           "name": "entity.name.type.lisette",
@@ -217,6 +301,22 @@
     },
     "function-calls": {
       "patterns": [
+        {
+          "comment": "Enum variant constructor: Variant(",
+          "match": "\\b([A-Z][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": { "name": "entity.name.function.lisette" }
+          }
+        },
+        {
+          "comment": "Module-qualified function call: pkg.Func( or pkg.func(",
+          "match": "\\b([a-z_][a-zA-Z0-9_]*)\\s*(\\.)\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
+          "captures": {
+            "1": { "name": "entity.name.namespace.lisette" },
+            "2": { "name": "punctuation.separator.dot.lisette" },
+            "3": { "name": "entity.name.function.lisette" }
+          }
+        },
         {
           "comment": "Function call: name(",
           "match": "\\b([a-z_][a-zA-Z0-9_]*)\\s*(?=\\()",
@@ -287,6 +387,30 @@
         {
           "name": "punctuation.separator.colon.lisette",
           "match": ":"
+        }
+      ]
+    },
+    "type-annotations": {
+      "patterns": [
+        {
+          "comment": "Type annotation: : TypeName",
+          "match": "(:)\\s*([A-Z][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "punctuation.separator.colon.lisette" },
+            "2": { "name": "entity.name.type.lisette" }
+          }
+        }
+      ]
+    },
+    "for-bindings": {
+      "patterns": [
+        {
+          "comment": "for loop binding: for x",
+          "match": "\\b(for)\\s+([a-z_][a-zA-Z0-9_]*)",
+          "captures": {
+            "1": { "name": "keyword.control.lisette" },
+            "2": { "name": "variable.lisette" }
+          }
         }
       ]
     }

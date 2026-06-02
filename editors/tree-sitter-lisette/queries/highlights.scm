@@ -100,6 +100,12 @@
 (function_signature_item
   name: (identifier) @function)
 
+; Method definitions in impl blocks
+(impl_item
+  body: (declaration_list
+    (function_item
+      name: (identifier) @function.method)))
+
 ; Function calls
 (call_expression
   function: (identifier) @function.call)
@@ -123,9 +129,28 @@
   type: (type_identifier) @type)
 
 (scoped_type_identifier
+  path: (type_identifier) @module
   name: (type_identifier) @type)
 
+(call_expression
+  function: (field_expression
+    value: (identifier) @module
+    field: (field_identifier) @function.call))
+
+(generic_call_expression
+  function: (field_expression
+    value: (identifier) @module
+    field: (field_identifier) @function.call))
+
 (never_type) @type.builtin
+
+; Prelude compound types
+((type_identifier) @type.builtin
+  (#match? @type.builtin "^(Option|Result|Partial|Slice|Map|Ref|Channel|Sender|Receiver|Range|RangeInclusive|RangeFrom|RangeTo|RangeToInclusive|EnumeratedSlice|Unknown|Never|Comparable|Ordered|VarArgs|PanicValue)$"))
+
+; Primitive types
+((type_identifier) @type.builtin
+  (#match? @type.builtin "^(int|int8|int16|int32|int64|uint|uint8|uint16|uint32|uint64|uintptr|byte|rune|float32|float64|complex64|complex128|bool|string|error)$"))
 
 ; Struct definitions
 (struct_item
@@ -256,6 +281,14 @@
 ; Directives
 (rawgo_directive
   "@rawgo" @keyword)
+
+; Prelude enum variant constructors
+((identifier) @constant.builtin
+  (#match? @constant.builtin "^(Some|None|Ok|Err|Both)$"))
+
+; Built-in functions
+((identifier) @function.builtin
+  (#match? @function.builtin "^(panic|assert_type|complex|real|imaginary|min|max|println|print)$"))
 
 ; Identifiers that look like constructors (uppercase first letter)
 ((identifier) @constructor

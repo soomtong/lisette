@@ -9,6 +9,7 @@ mod paths;
 mod patterns;
 mod position;
 mod project;
+mod semantic_tokens;
 mod signature_help;
 mod snapshot;
 mod state;
@@ -100,6 +101,45 @@ impl LanguageServer for Backend {
                     retrigger_characters: None,
                     work_done_progress_options: Default::default(),
                 }),
+                semantic_tokens_provider: Some(
+                    SemanticTokensServerCapabilities::SemanticTokensOptions(
+                        SemanticTokensOptions {
+                            legend: SemanticTokensLegend {
+                                token_types: vec![
+                                    SemanticTokenType::NAMESPACE,
+                                    SemanticTokenType::TYPE,
+                                    SemanticTokenType::CLASS,
+                                    SemanticTokenType::ENUM,
+                                    SemanticTokenType::INTERFACE,
+                                    SemanticTokenType::STRUCT,
+                                    SemanticTokenType::TYPE_PARAMETER,
+                                    SemanticTokenType::PARAMETER,
+                                    SemanticTokenType::VARIABLE,
+                                    SemanticTokenType::PROPERTY,
+                                    SemanticTokenType::ENUM_MEMBER,
+                                    SemanticTokenType::FUNCTION,
+                                    SemanticTokenType::METHOD,
+                                    SemanticTokenType::COMMENT,
+                                    SemanticTokenType::STRING,
+                                    SemanticTokenType::NUMBER,
+                                    SemanticTokenType::KEYWORD,
+                                    SemanticTokenType::OPERATOR,
+                                ],
+                                token_modifiers: vec![
+                                    SemanticTokenModifier::DECLARATION,
+                                    SemanticTokenModifier::READONLY,
+                                    SemanticTokenModifier::STATIC,
+                                    SemanticTokenModifier::ASYNC,
+                                    SemanticTokenModifier::MODIFICATION,
+                                    SemanticTokenModifier::DOCUMENTATION,
+                                ],
+                            },
+                            full: Some(SemanticTokensFullOptions::Bool(true)),
+                            ..Default::default()
+                        },
+                    ),
+                ),
+                code_action_provider: Some(CodeActionProviderCapability::Simple(true)),
                 ..Default::default()
             },
             ..Default::default()
@@ -1379,6 +1419,75 @@ impl LanguageServer for Backend {
         };
 
         Ok(signature_help::handle(&file.items, offset))
+    }
+
+    async fn semantic_tokens_full(
+        &self,
+        params: SemanticTokensParams,
+    ) -> Result<Option<SemanticTokensResult>> {
+        let uri = &params.text_document.uri;
+
+        let Some(snapshot) = self.get_snapshot(uri).await else {
+            return Ok(None);
+        };
+        let Some(file_id) = snapshot.get_file_id(uri) else {
+            return Ok(None);
+        };
+        let Some(file) = snapshot.files().get(&file_id) else {
+            return Ok(None);
+        };
+        let Some(line_index) = snapshot.get_line_index(file_id) else {
+            return Ok(None);
+        };
+
+        let tokens = semantic_tokens::compute_semantic_tokens(file, &snapshot, line_index);
+        Ok(Some(SemanticTokensResult::Tokens(tokens)))
+    }
+
+    async fn code_action(
+        &self,
+        params: CodeActionParams,
+    ) -> Result<Option<CodeActionResponse>> {
+        let uri = &params.text_document.uri;
+        let mut actions = Vec::new();
+
+        for diagnostic in &params.context.diagnostics {
+            let Some(NumberOrString::String(code)) = diagnostic.code.as_ref() else {
+                continue;
+            };
+            if code != "unused_variable" && code != "unused_param" {
+                continue;
+            }
+
+            let mut changes = std::collections::HashMap::new();
+            changes.insert(
+                uri.clone(),
+                vec![TextEdit {
+                    range: Range {
+                        start: diagnostic.range.start,
+                        end: diagnostic.range.start,
+                    },
+                    new_text: "_".to_string(),
+                }],
+            );
+
+            actions.push(CodeActionOrCommand::CodeAction(CodeAction {
+                title: "Prefix with `_`".to_string(),
+                kind: Some(CodeActionKind::QUICKFIX),
+                diagnostics: Some(vec![diagnostic.clone()]),
+                edit: Some(WorkspaceEdit {
+                    changes: Some(changes),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            }));
+        }
+
+        if actions.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(actions))
+        }
     }
 
     async fn shutdown(&self) -> Result<()> {

@@ -78,6 +78,7 @@ impl SharedState {
         };
 
         let lex_result = Lexer::new(&source, 0).lex();
+        let trivia = lex_result.trivia.clone();
         if lex_result.failed() {
             let line_index = LineIndex::new(&source);
             return Err(lex_result
@@ -181,6 +182,7 @@ impl SharedState {
             has_parse_errors,
             &config,
             uri,
+            trivia,
         ))
     }
 
@@ -259,6 +261,34 @@ pub(crate) fn convert_diagnostic(d: &LisetteDiagnostic, index: &LineIndex) -> Di
         .map(|label| index.offset_len_to_range(label.offset(), label.len()))
         .unwrap_or_default();
 
+    let tags = if d.is_error() {
+        None
+    } else {
+        d.code_str().and_then(|code| {
+            let is_unnecessary = code.contains("unused")
+                || code.contains("unnecessary")
+                || code.contains("dead_code")
+                || code.contains("redundant")
+                || code.contains("needless")
+                || code == "excess_parens_on_condition"
+                || code == "replaceable_with_zero_fill"
+                || code == "single_arm_match"
+                || code == "uninterpolated_fstring"
+                || code == "expression_only_fstring"
+                || code == "empty_match_arm"
+                || code == "rest_only_slice_pattern"
+                || code == "loop_runs_once"
+                || code == "match_on_literal"
+                || code == "unreachable_if_let_else"
+                || code == "identical_if_branches";
+            if is_unnecessary {
+                Some(vec![DiagnosticTag::UNNECESSARY])
+            } else {
+                None
+            }
+        })
+    };
+
     Diagnostic {
         range,
         severity: Some(if d.is_error() {
@@ -282,6 +312,7 @@ pub(crate) fn convert_diagnostic(d: &LisetteDiagnostic, index: &LineIndex) -> Di
         },
         source: Some("lisette".into()),
         code: d.code_str().map(|s| NumberOrString::String(s.to_string())),
+        tags,
         ..Default::default()
     }
 }
